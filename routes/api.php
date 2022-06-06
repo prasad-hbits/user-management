@@ -21,8 +21,10 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 Route::get('/users',[UsersController::class,'view_records']);
 
-Route::post('/add',[UsersController::class,'add_record']);
+Route::post('/users',[UsersController::class,'add_record']);
 
-Route::delete('/deleteuser',[UsersController::class,'delete_record']);
+Route::delete('/users',[UsersController::class,'delete_record']);
 
-Route::put('/updateuser',[UsersController::class,'update_record']);
+Route::put('/users',[UsersController::class,'update_record']);
+
+Route::get('/users/{id}', [UsersController::class,'view_single_records']);
