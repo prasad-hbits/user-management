@@ -19,12 +19,12 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::get('/users',[UsersController::class,'view_records']);
+Route::get('/users',[UsersController::class,'ViewRecords']);
 
-Route::post('/users',[UsersController::class,'add_record']);
+Route::post('/users',[UsersController::class,'AddRecord']);
 
-Route::delete('/users',[UsersController::class,'delete_record']);
+Route::delete('/users',[UsersController::class,'DeleteRecord']);
 
-Route::put('/users',[UsersController::class,'update_record']);
+Route::put('/users',[UsersController::class,'UpdateRecord']);
 
-Route::get('/users/{id}', [UsersController::class,'view_single_records']);
+Route::get('/users/{id}', [UsersController::class,'ViewSingleRecords']);

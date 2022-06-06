@@ -4,15 +4,16 @@ namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
-use App\Models\user;
-use App\Models\department;
+use App\Models\User;
+use App\Models\Department;
 
 class UsersController extends Controller
 {
 
-	function view_records(Request $req){
+	function ViewRecords(Request $request)
+    {
 
-        $validator = Validator::make($req->all(),[
+        $validator = Validator::make($request->all(),[
             "limit" => "numeric",
         ]);
 
@@ -21,161 +22,69 @@ class UsersController extends Controller
         }
 
         try{
-        //    $limit = 10;
-            $orderby = 'modified_on';
-         //  if($req->limit) $limit = $req->limit;
-           $limit = $req->input('limit',10);
-
-		    $details = user::join("departments","departments.id","=","users.department_id");
-
-            // Search by column name and searchtext
-            if($req->searchtext){
-                $details = $details->where('firstname',"like",'%'.$req->searchtext.'%');
-                $details = $details->orwhere('lastname',"like",'%'.$req->searchtext.'%');
-                $details = $details->orwhere('email',"like",'%'.$req->searchtext.'%');
+            $user = new User;
+            $view = $user->UserRecords($request);
+            if($view){
+                return response()->json(["status" => "Records Found","Details" => $view], 201);
+            }else {
+                return response()->json(["status"=>"Records not Found"], 422);
             }
-
-            //Order by desc
-            if($req->orderby) $orderby = $req->orderby;
-            $details = $details->OrderByDesc($orderby);
-
-
-            $details = $details->paginate($limit,['users.id','users.firstname','users.lastname','users.email','users.dob','users.salary','departments.name']);
-	    	return response()->json([
-    			"status" => "Records Found",
-			    "Details" => $details
-		    ], 201);
         }catch(\Exception $e){
-            return response()->json([
-                "error" => $e->getMessage()
-            ], 422);
+            return response()->json(["error" => $e->getMessage()], 422);
         }
      }
 
-	function add_record(Request $req){
-		
-		$validator = Validator::make($req->all(),[
-            "firstname" => "required|min:2|max:50",
-            "lastname" => "required|min:2|max:50",
-            "email" => "required|email|unique:users|email:rfc,dns",
-            "dob" => "required|date|date_format:Y-m-d",
-            "salary" => "required|numeric|min:2",
-            "department" => "required|min:2|max:40",
-            "id" => "required|numeric"
-        ]);
-
-        if($validator->Fails()){
-                return response()->json(["status" => "Validation Fails","errors" => $validator->errors()], 422);
-        };
-
-		try{
-			$department = new department;
-			$department->name = $req->department;
-			$department->save();
-
-
-			$user = new user;
-			$user->firstname = $req->firstname;
-			$user->lastname = $req->lastname;
-			$user->email = $req->email;
-			$user->dob = $req->dob;
-			$user->salary = $req->salary;
-			$user->department_id = $department->id;
-			$user->save();
-
-			return response()->json([
-				"status" => "User added successfully",
-				"userdetails" => $user,
-				"department" => $department
-			], 201);
-		}catch(\Exception $e){
-			return response()->json(["errors" => $e->getMessage()], 422);
-		}
-	}
-
-
-
-	function update_record(Request $req)
+	function UpdateRecord(Request $request)
     {
-
-        $validator = Validator::make($req->all(),[
-            "firstname" => "required|min:2|max:50",
-            "lastname" => "required|min:2|max:50",
+        $validator = Validator::make($request->all(),[
+            "first_name" => "required|min:2|max:50",
+            "last_name" => "required|min:2|max:50",
             "email" => "required|email|unique:users|email:rfc,dns",
             "dob" => "required|date|date_format:Y-m-d",
             "salary" => "required|numeric|min:2",
-            "department" => "required|min:2|max:40",
+            "department_id" => "numeric|min:1",
             "id" => "required|numeric"
         ]);
-
         if($validator->Fails()){
                 return response()->json(["status" => "Validation Fails","errors" => $validator->errors()], 422);
         };
-
 		try{
-			if($req->id == 0){
-				$department = new department;
-				$department->name = $req->department;
-				$department->save();
-
-
-				$user = new user;
-				$user->firstname = $req->firstname;
-				$user->lastname = $req->lastname;
-				$user->email = $req->email;
-				$user->dob = $req->dob;
-				$user->salary = $req->salary;
-				$user->department_id = $department->id;
-				$user->save();
-
-				return response()->json(["status" => "user created successfully", "user" => $user, "department" => $department], 201);
-			}else{
-				$user = user::find($req->id);
-				if($user){
-					$user->firstname = $req->firstname;
-					$user->lastname = $req->lastname;
-					$user->email = $req->email;
-					$user->dob = $req->dob;
-					$user->salary = $req->salary;
-					$user->save();
-					
-					$department = department::find($user->department_id);
-					$department->name = $req->department;
-					$department->save();
-                    
-					return response()->json([
-						"status" => "User updated successfully",
-						"user" => $user,
-						"department" => $department
-					], 201);
-				}else{
-					return response()->json(["status"=>"Entered userid is not valid"], 422);
-				}
-			}
+			if($request->id == 0){
+				$user = new User;
+                $userdetails = $user->CreateRecord($request);
+                if($userdetails){
+        		    return response()->json(["status" => "user created successfully", "user" => $userdetails], 201);
+                }else{
+                    return response()->json(["status" => "Error in user creation", "user" => $userdetails], 201);
+                }
+            }
+            $user = new User;
+            $userdetails = $user->UpdateUserRecord($request);
+            if($userdetails){
+				return response()->json(["status" => "User updated successfully","user" => $userdetails], 201);
+            }else{
+                return response()->json(["status"=>"Entered userid is not valid"], 422);
+            }
 		}catch(\Exception $e){
 				return response()->json(["errors" => $e->getMessage()], 422);
-
 		}
 	}
 
 	
-	function delete_record(Request $req){
-
-        $validator = Validator::make($req->all(),[
+	function DeleteRecord(Request $request)
+    {
+        $validator = Validator::make($request->all(),[
             "id" => "required|numeric|min:1"
         ]);
-
         if($validator->Fails()){
                 return response()->json(["status" => "Validation Fails","errors" => $validator->errors()], 422);
         };
-
         try{
-		    $user = user::find($req->id);
-            if($user){
-                $user->delete();
-       
-	    	    return response()->json(["status" => "User record deleted successfully.", "Details" => $user], 201);
-           }else{
+            $user = new User;
+            $deleteduser = $user->DeleteUser($request);
+            if($deleteduser){       
+	    	    return response()->json(["status" => "User record deleted successfully.", "Details" => $deleteduser], 201);
+            }else{
                 return response()->json(["Message" => "Invalid User Id passed"], 422);
             }
         }catch(\Exception $e){
@@ -183,24 +92,18 @@ class UsersController extends Controller
         }
 	}
 
-    function view_single_records($id){
+    function ViewSingleRecords($id)
+    {
         try{
-            $users = user::find($id);
-
-            if($users){
-               return response()->json([
-                    "status" => "User record found",
-                    "Details" => $users
-                ], 201);
+            $user = new User;
+            $viewuser = $user->ViewUser($id);
+            if($viewuser){
+               return response()->json(["status" => "User record found","Details" => $viewuser], 201);
             }else{
-                return response()->json([
-                    "status" => "User record not found"
-               ], 422);
+               return response()->json(["status" => "User record not found"], 422);
             }
         }catch(\Exception $e){
             return response()->json(["errors" => $e->getMessage()], 422);
-        }
-        
+        }   
     }
-
 }
