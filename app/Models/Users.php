@@ -13,6 +13,8 @@ class User extends Model
 	const CREATED_AT = 'created_on';
 	const UPDATED_AT = 'modified_on';
 
+    
+
     protected $fillable = ['first_name','last_name','email','dob','salary','department_id'];
 
 
