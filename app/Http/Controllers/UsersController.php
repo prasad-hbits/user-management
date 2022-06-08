@@ -4,37 +4,44 @@ namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
-use App\Models\User;
-use App\Models\Department;
+use App\Models\Users;
+use App\Models\Departments;
+use Exception;
 
 class UsersController extends Controller
 {
+    /**
+     * Description - Api to get all Users record using paginate, search on table first_name, last_name, email, salary
+     * default limit is 10, orderby paramenter is in json format consists of colname and sort i.e. Asc or Desc.
+     * @author  Prasad
+     */
 
-	function ViewRecords(Request $request)
+	function viewRecords(Request $request)
     {
-
         $validator = Validator::make($request->all(),[
             "limit" => "numeric",
+            "orderby" => "json",
+            "page" => "numeric|min:1"
         ]);
+        if($validator->Fails()) return response()->json(["status" => false, "message" => $validator->errors()], config('constants.lang.validation_fail'));
 
-        if($validator->Fails()){
-            return response()->json(["status" => "Validation Fails", "errors" => $validator->errors()], 422);
-        }
-
-        try{
-            $user = new User;
-            $view = $user->UserRecords($request);
-            if($view){
-                return response()->json(["status" => "Records Found","Details" => $view], 201);
-            }else {
-                return response()->json(["status"=>"Records not Found"], 422);
+        try {
+            $view = Users::userRecords($request);
+            if($view) {
+                return response()->json(["status" => true, "message" => "Records Found","data" => $view], config('constants.lang.success'));
+            } else {
+                return response()->json(["status" => false, "message" => "Records not Found"], config('constants.lang.ok'));
             }
-        }catch(\Exception $e){
-            return response()->json(["error" => $e->getMessage()], 422);
+        } catch(Exception $e) {
+            return response()->json(["status" => false, "message" => $e->getMessage()], config('constants.lang.server_error'));
         }
      }
 
-	function UpdateRecord(Request $request)
+    /**
+     * Description - Api to create and update User record
+     * @author Prasad
+     */
+	function updateRecord(Request $request)
     {
         $validator = Validator::make($request->all(),[
             "first_name" => "required|min:2|max:50",
@@ -45,65 +52,53 @@ class UsersController extends Controller
             "department_id" => "numeric|min:1",
             "id" => "required|numeric"
         ]);
-        if($validator->Fails()){
-                return response()->json(["status" => "Validation Fails","errors" => $validator->errors()], 422);
-        };
-		try{
-			if($request->id == 0){
-				$user = new User;
-                $userdetails = $user->CreateRecord($request);
-                if($userdetails){
-        		    return response()->json(["status" => "user created successfully", "user" => $userdetails], 201);
-                }else{
-                    return response()->json(["status" => "Error in user creation", "user" => $userdetails], 201);
-                }
+        if($validator->Fails())  return response()->json(["status" => false, "message" => $validator->errors()], config('constants.lang.validation_fail'));
+		
+        try {
+			if($request->id == 0) {
+                Users::createRecord($request);
+                return response()->json(["status" => true, "message" => "User created successfully"], config('constants.lang.success'));
             }
-            $user = new User;
-            $userdetails = $user->UpdateUserRecord($request);
-            if($userdetails){
-				return response()->json(["status" => "User updated successfully","user" => $userdetails], 201);
-            }else{
-                return response()->json(["status"=>"Entered userid is not valid"], 422);
-            }
-		}catch(\Exception $e){
-				return response()->json(["errors" => $e->getMessage()], 422);
+            if(Users::checkUserId($request->id) == false)  return response()->json(["status" => false, "message" => "Entered userid is not valid"], config('constants.lang.ok'));    
+            Users::updateUserRecord($request);
+            return response()->json(["status" => true, "message" => "User updated successfully"], config('constants.lang.success'));
+        } catch(Exception $e) {
+			return response()->json(["status" => false, "message" => $e->getMessage()], config('constants.lang.server_error'));
 		}
 	}
 
-	
-	function DeleteRecord(Request $request)
+	/**
+     * Description - Api to delete User record by its id.
+     * @author Prasad
+     */
+	function deleteRecord(Request $request)
     {
         $validator = Validator::make($request->all(),[
             "id" => "required|numeric|min:1"
         ]);
-        if($validator->Fails()){
-                return response()->json(["status" => "Validation Fails","errors" => $validator->errors()], 422);
-        };
-        try{
-            $user = new User;
-            $deleteduser = $user->DeleteUser($request);
-            if($deleteduser){       
-	    	    return response()->json(["status" => "User record deleted successfully.", "Details" => $deleteduser], 201);
-            }else{
-                return response()->json(["Message" => "Invalid User Id passed"], 422);
-            }
-        }catch(\Exception $e){
-            return response()->json(["errors" => $e->getMessage()], 422);
+        if($validator->Fails())  return response()->json(["status" => false, "message" => $validator->errors()], config('constants.lang.validation_fail'));
+
+        try {
+            if(Users::checkUserId($request->id) == false) return response()->json(["status" => false, "message" => "Invalid User Id passed"], config('constants.lang.ok'));
+            Users::deleteUser($request);    
+            return response()->json(["status" => true, "message" => "User record deleted successfully."], config('constants.lang.success'));
+        } catch(Exception $e) {
+            return response()->json(["status" => false, "errors" => $e->getMessage()], config('constants.lang.server_error'));
         }
 	}
 
-    function ViewSingleRecords($id)
+    /**
+     * Description - Api to view single User record  by its id.
+     * @author  Prasad
+     */
+    function viewSingleRecords($id)
     {
-        try{
-            $user = new User;
-            $viewuser = $user->ViewUser($id);
-            if($viewuser){
-               return response()->json(["status" => "User record found","Details" => $viewuser], 201);
-            }else{
-               return response()->json(["status" => "User record not found"], 422);
-            }
-        }catch(\Exception $e){
-            return response()->json(["errors" => $e->getMessage()], 422);
+        try {
+            if(Users::checkUserId($id) == false)  return response()->json(["status" => false, "message" => "User record not found"], config('constants.lang.ok'));
+            $viewuser = Users::viewUser($id);
+            return response()->json(["status" => true, "message" => "User record found", "data" => $viewuser], config('constants.lang.success'));
+        } catch(Exception $e) {
+            return response()->json(["status" => false, "message" => $e->getMessage()], config('constants.lang.server_error'));
         }   
     }
 }
