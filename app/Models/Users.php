@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use DateTime;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class Users extends Model
 {
@@ -90,7 +92,7 @@ class Users extends Model
             $details = $details->OrderByDesc('modified_on');
         }
         if(self::validateDate($request->searchtext))  $details = $details->orwhere('dob','=',$request->searchtext);
-        $details = $details->paginate($limit,['users.id','users.first_name','users.last_name','users.email','users.dob','users.salary','departments.name']);
+        $details = $details->paginate($limit,['users.id','users.first_name','users.last_name','users.email','users.dob','users.salary',DB::raw("DATE_FORMAT(users.created_on,'%Y-%m-%d') as display_date"),'departments.name as department_name']);
         return $details;
     }
 
@@ -100,8 +102,7 @@ class Users extends Model
      */
     static function deleteUser($request)
     {
-        $user = self::find($request->id);
-        $user->delete();
+        self::find($request->id)->delete();
     }
 
     /**
@@ -110,7 +111,8 @@ class Users extends Model
      */
     static function viewUser($id)
     {
-        $user = self::find($id);
-        return $user;
+        $users = self::select('users.first_name','users.last_name','users.email','users.dob','users.salary','users.created_on','departments.name as department_name')->join('departments','users.department_id','=','departments.id')->where('users.id','=',$id)->first();
+        $users->display_date = Carbon::createFromFormat('Y-m-d H:i:s', $users['created_on'])->format('Y-m-d');
+        return $users;
     }
 }

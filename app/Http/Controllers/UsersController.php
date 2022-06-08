@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 use App\Models\Users;
-use App\Models\Departments;
 use Exception;
 
 class UsersController extends Controller
@@ -23,17 +22,17 @@ class UsersController extends Controller
             "orderby" => "json",
             "page" => "numeric|min:1"
         ]);
-        if($validator->Fails()) return response()->json(["status" => false, "message" => $validator->errors()], config('constants.lang.validation_fail'));
+        if($validator->Fails()) return response()->json(["status" => false, "message" => $validator->errors()], config('constants.status_code.validation_fail'));
 
         try {
             $view = Users::userRecords($request);
             if($view) {
-                return response()->json(["status" => true, "message" => "Records Found","data" => $view], config('constants.lang.success'));
+                return response()->json(["status" => true, "message" => "Records Found","data" => $view], config('constants.status_code.success'));
             } else {
-                return response()->json(["status" => false, "message" => "Records not Found"], config('constants.lang.ok'));
+                return response()->json(["status" => false, "message" => "Records not Found"], config('constants.status_code.success'));
             }
         } catch(Exception $e) {
-            return response()->json(["status" => false, "message" => $e->getMessage()], config('constants.lang.server_error'));
+            return response()->json(["status" => false, "message" => $e->getMessage()], config('constants.status_code.server_error'));
         }
      }
 
@@ -52,18 +51,18 @@ class UsersController extends Controller
             "department_id" => "numeric|min:1",
             "id" => "required|numeric"
         ]);
-        if($validator->Fails())  return response()->json(["status" => false, "message" => $validator->errors()], config('constants.lang.validation_fail'));
+        if($validator->Fails())  return response()->json(["status" => false, "message" => $validator->errors()], config('constants.status_code.validation_fail'));
 		
         try {
 			if($request->id == 0) {
                 Users::createRecord($request);
-                return response()->json(["status" => true, "message" => "User created successfully"], config('constants.lang.success'));
+                return response()->json(["status" => true, "message" => "User created successfully"], config('constants.status_code.success'));
             }
-            if(Users::checkUserId($request->id) == false)  return response()->json(["status" => false, "message" => "Entered userid is not valid"], config('constants.lang.ok'));    
+            if(Users::checkUserId($request->id) == false)  return response()->json(["status" => false, "message" => "Entered userid is not valid"], config('constants.status_code.success'));    
             Users::updateUserRecord($request);
-            return response()->json(["status" => true, "message" => "User updated successfully"], config('constants.lang.success'));
+            return response()->json(["status" => true, "message" => "User updated successfully"], config('constants.status_code.success'));
         } catch(Exception $e) {
-			return response()->json(["status" => false, "message" => $e->getMessage()], config('constants.lang.server_error'));
+			return response()->json(["status" => false, "message" => $e->getMessage()], config('constants.status_code.server_error'));
 		}
 	}
 
@@ -76,14 +75,14 @@ class UsersController extends Controller
         $validator = Validator::make($request->all(),[
             "id" => "required|numeric|min:1"
         ]);
-        if($validator->Fails())  return response()->json(["status" => false, "message" => $validator->errors()], config('constants.lang.validation_fail'));
+        if($validator->Fails())  return response()->json(["status" => false, "message" => $validator->errors()], config('constants.status_code.validation_fail'));
 
         try {
-            if(Users::checkUserId($request->id) == false) return response()->json(["status" => false, "message" => "Invalid User Id passed"], config('constants.lang.ok'));
+            if(Users::checkUserId($request->id) == false) return response()->json(["status" => false, "message" => "Invalid User Id passed"], config('constants.status_code.success'));
             Users::deleteUser($request);    
-            return response()->json(["status" => true, "message" => "User record deleted successfully."], config('constants.lang.success'));
+            return response()->json(["status" => true, "message" => "User record deleted successfully."], config('constants.status_code.success'));
         } catch(Exception $e) {
-            return response()->json(["status" => false, "errors" => $e->getMessage()], config('constants.lang.server_error'));
+            return response()->json(["status" => false, "errors" => $e->getMessage()], config('constants.status_code.server_error'));
         }
 	}
 
@@ -94,11 +93,11 @@ class UsersController extends Controller
     function viewSingleRecords($id)
     {
         try {
-            if(Users::checkUserId($id) == false)  return response()->json(["status" => false, "message" => "User record not found"], config('constants.lang.ok'));
+            if(Users::checkUserId($id) == false)  return response()->json(["status" => false, "message" => "User record not found"], config('constants.status_code.success'));
             $viewuser = Users::viewUser($id);
-            return response()->json(["status" => true, "message" => "User record found", "data" => $viewuser], config('constants.lang.success'));
+            return response()->json(["status" => true, "message" => "User record found", "data" => $viewuser], config('constants.status_code.success'));
         } catch(Exception $e) {
-            return response()->json(["status" => false, "message" => $e->getMessage()], config('constants.lang.server_error'));
+            return response()->json(["status" => false, "message" => $e->getMessage()], config('constants.status_code.server_error'));
         }   
     }
 }
